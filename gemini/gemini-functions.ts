@@ -23,6 +23,30 @@ export const setLightValuesFunctionDeclaration = {
   },
 };
 
+export const getLatitudeLongitudeOfUserFunctionDeclaration = {
+  name: "get_latitude_longitude_of_user",
+  description: "returns the co-ordinates of user",
+};
+
+export const getLocationOfUserFunctionDeclaration = {
+  name: "get_location_of_user_using_latitude_longitude",
+  description: "Get the location of user using latitude and longitude",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      latitude: {
+        type: Type.STRING,
+        description: "Latitude co-ordinate EX: 40.741895",
+      },
+      longitude: {
+        type: Type.STRING,
+        description: "longitude co-ordinate EX: -73.989308",
+      },
+    },
+    required: ["latitude", "longitude"],
+  },
+};
+
 export const getWeatherFunctionDeclaration = {
   name: "get_weather",
   description: "Get the weather of a city",
@@ -45,6 +69,26 @@ export const setLightValues = (brightness: number, color_temp: string) => {
   };
 };
 
-export const getWeather = (city: string) => {
+export const getWeather = ({ city }: { city: string }) => {
   return `The Temperature is 22 C, and little foggy in ${city}`;
+};
+
+export const getLocationOfUser = ({
+  latitude,
+  longitude,
+}: {
+  latitude: string;
+  longitude: string;
+}): string => {
+  return "Bengaluru";
+};
+
+export const getLatitudeLongitudeOfUser = (): {
+  latitude: string;
+  longitude: string;
+} => {
+  return {
+    latitude: "40.741895",
+    longitude: "-73.989308",
+  };
 };

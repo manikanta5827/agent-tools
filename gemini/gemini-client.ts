@@ -1,7 +1,9 @@
-import { GoogleGenAI } from "@google/genai";
-import type { Message } from "./index";
+import { GenerateContentResponse, GoogleGenAI } from "@google/genai";
+import type { Message } from "./types";
 
 import {
+  getLatitudeLongitudeOfUserFunctionDeclaration,
+  getLocationOfUserFunctionDeclaration,
   getWeatherFunctionDeclaration,
   setLightValuesFunctionDeclaration,
 } from "./gemini-functions";
@@ -15,6 +17,8 @@ const config = {
       functionDeclarations: [
         setLightValuesFunctionDeclaration,
         getWeatherFunctionDeclaration,
+        getLocationOfUserFunctionDeclaration,
+        getLatitudeLongitudeOfUserFunctionDeclaration,
       ],
     },
   ],
@@ -23,7 +27,7 @@ const config = {
 export const getGeminiData = async (contents: Message[]) => {
   console.log("making llm call");
 
-  let response = await ai.models.generateContent({
+  let response: GenerateContentResponse = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: contents,
     config: config,
