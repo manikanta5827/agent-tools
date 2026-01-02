@@ -10,13 +10,18 @@ import type {
 
 const client = new BedrockRuntimeClient({});
 
-const modelId: string = "deepseek.v3-v1:0"; // amazon nova lite
+const modelId: string = "google.gemma-3-27b-it"; // amazon nova lite
 
 export async function runConverse(
   messages: Message[],
   toolConfig: ConverseCommandInput["toolConfig"]
 ) {
-  const input: ConverseCommandInput = {
+  let paylaod: ConverseCommandInput = {
+    system: [
+      {
+        text: "You are a helpful AI assistant. Use the provided tools for any factual or external tasks. Do not guess information that tools can provide.",
+      },
+    ],
     modelId: modelId,
     messages: messages,
     toolConfig: toolConfig,
@@ -26,14 +31,13 @@ export async function runConverse(
     },
   };
 
-  const command = new ConverseCommand(input);
+  console.log("payload :: ", JSON.stringify(paylaod, null, 2));
+  const command = new ConverseCommand(paylaod);
 
   try {
     const response: ConverseCommandOutput = await client.send(command);
     const assistantMessage = response.output?.message;
-
-    // console.log(assistantMessage);
-
+    console.log("response :: ", JSON.stringify(response, null, 2));
     // The response is a structured object, extract the text content
     if (
       assistantMessage &&

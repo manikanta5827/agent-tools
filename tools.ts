@@ -28,21 +28,32 @@ export const toolConfig: ToolConfiguration = {
     },
     {
       toolSpec: {
-        name: "getFactorial",
-        description: "Get the factorial of a number",
+        name: "changeLightsMode",
+        description: "change the mode of lights from cold,warm",
         inputSchema: {
           json: {
             type: "object",
             properties: {
-              num: {
+              mode: {
                 type: "string",
-                description: "Number to calculate the factorial like 2, 5, 10",
+                description:
+                  "mode specifying the light temperature EX: cold,warm",
               },
             },
-            required: ["num"],
+            required: ["mode"],
           },
         },
       },
     },
   ],
 };
+
+export class Tools {
+  get_weather(location: string): string {
+    return `Weather in ${location} is sunny with 72F`;
+  }
+
+  change_lights_mode(mode: string): string {
+    return `Lights mode is changed to ${mode}`;
+  }
+}
