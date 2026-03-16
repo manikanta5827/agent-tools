@@ -1,10 +1,21 @@
 import readline from "node:readline";
 import { myEmitter } from "./emitter";
 import { randomUUID } from "node:crypto";
-import type { Message } from "./types";
 import { Role } from "./types";
 
 import "./event-emitters";
+import "../mcp-client/event-emitters";
+
+// check health of redis
+import {
+  getSessionMessages,
+  setSessionMessages,
+  redisHealthCheck,
+} from "./redis-store";
+
+await redisHealthCheck();
+
+const sessionId = randomUUID();
 
 // Create line-based stdin reader
 const rl = readline.createInterface({
@@ -13,25 +24,38 @@ const rl = readline.createInterface({
 });
 
 // Read one JSON-RPC message per line
-console.log('Ask anything...')
+console.log("Ask anything...");
 rl.on("line", async (userMessage) => {
   if (!userMessage.trim()) return;
 
   try {
     console.log(`user message :: `, userMessage);
-    let messages: Message[] = [];
 
-    // store the user message
-    messages = [
-      {
+    // get the user messages if exist
+    const sessionMessages = await getSessionMessages(sessionId);
+    console.log(sessionMessages);
+    // if it is first message of user then only push this new message
+    if (sessionMessages === null) {
+      const message = [
+        {
+          role: Role.USER,
+          parts: [{ text: userMessage }],
+        },
+      ];
+      await setSessionMessages(sessionId, message);
+    } else {
+      // if already user is chatting then add this user message to existing messages
+      sessionMessages.push({
         role: Role.USER,
         parts: [{ text: userMessage }],
-      },
-    ];
+      });
+
+      await setSessionMessages(sessionId, sessionMessages);
+    }
 
     // trigger llm request event
 
-    myEmitter.emit("LLM_REQUEST", randomUUID(), messages);
+    myEmitter.emit("LLM_REQUEST", sessionId);
 
     console.log(`emitted event`);
   } catch (error) {

@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "test-stdio-server": {
+      "transport": "stdio",
+      "command": "/opt/homebrew/bin/bun",
+      "args": [
+        "/Users/chilaka/Documents/Personal_Projects/mcp-projects/http-mcp-server/index-stdio.ts"
+      ]
+    },
+    "test-http-server": {
+      "transport": "http",
+      "url": [
+        "https://zuigdes7hged75e76ka2sfmigi0kkpkf.lambda-url.ap-south-1.on.aws/mcp"
+      ]
+    },
+    "test2-stdio-server": {
+      "transport": "stdio",
+      "command": "/opt/homebrew/bin/bun",
+      "args": [
+        "/Users/chilaka/Documents/Personal_Projects/mcp-projects/http-mcp-server/index-stdio.ts"
+      ]
+    }
+  }
+}

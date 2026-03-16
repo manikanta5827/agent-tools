@@ -69,17 +69,23 @@ export const setLightValues = (brightness: number, color_temp: string) => {
   };
 };
 
-export const getWeather = ({ city }: { city: string }) => {
-  return `The Temperature is 22 C, and little foggy in ${city}`;
+export const getWeather = async (city: string) => {
+  const url = `https://n72qvcqupubpl6ltzybdtwvqb40inpne.lambda-url.ap-south-1.on.aws/?location=${city}`;
+  console.log(url);
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    return `Failed to fetch weather data of ${city}`;
+  }
+
+  const res = await response.json();
+  return JSON.stringify(res);
 };
 
-export const getLocationOfUser = ({
-  latitude,
-  longitude,
-}: {
-  latitude: string;
-  longitude: string;
-}): string => {
+export const getLocationOfUser = (
+  latitude: string,
+  longitude: string
+): string => {
   return "Bengaluru";
 };
 

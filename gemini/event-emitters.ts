@@ -1,17 +1,24 @@
 import { myEmitter } from "./emitter";
-import type { Message, GeminiResponse } from "./types";
+import type { GeminiResponse } from "./types";
 import { getGeminiData } from "./gemini-client";
 import { Role } from "./types";
 import {
   getLatitudeLongitudeOfUser,
   getLocationOfUser,
   getWeather,
+  setLightValues,
 } from "./gemini-functions";
+import { getSessionMessages, setSessionMessages } from "./redis-store";
 
-myEmitter.on("LLM_REQUEST", async (sessionId: string, messages: Message[]) => {
+myEmitter.on("LLM_REQUEST", async (sessionId: string) => {
   console.log(`LLM_REQUEST is triggered with these args ${sessionId}`);
 
-  const res = (await getGeminiData(messages)) as GeminiResponse;
+  // get the user messages from redis store using sessionId
+  const sessionMessages = await getSessionMessages(sessionId);
+  if (!sessionMessages)
+    throw new Error("No messsages present for this sessionId");
+
+  const res = (await getGeminiData(sessionMessages)) as GeminiResponse;
 
   const candidate = res.candidates?.[0];
   if (!candidate) {
@@ -19,9 +26,12 @@ myEmitter.on("LLM_REQUEST", async (sessionId: string, messages: Message[]) => {
     return;
   }
 
-  const funcPart = candidate.content.parts.find((p) => p.functionCall);
+  const funcPart = candidate.content?.parts?.find((p) => p.functionCall);
   if (!funcPart?.functionCall) {
-    console.log(candidate.content.parts.map((p) => p.text).join(""));
+    console.log(
+      candidate.content?.parts?.map((p) => p.text).join("") ||
+        `No response from LLM :: ${candidate.content}`
+    );
     return;
   }
 
@@ -31,7 +41,7 @@ myEmitter.on("LLM_REQUEST", async (sessionId: string, messages: Message[]) => {
   console.log("Tool Args :: ", args);
 
   // push the llm message to array
-  messages.push({
+  sessionMessages.push({
     role: Role.MODEL,
     parts: [
       {
@@ -43,18 +53,15 @@ myEmitter.on("LLM_REQUEST", async (sessionId: string, messages: Message[]) => {
     ],
   });
 
+  await setSessionMessages(sessionId, sessionMessages);
+
   // emit the tool request event
-  myEmitter.emit("TOOL_REQUEST", sessionId, messages, name, args);
+  myEmitter.emit("TOOL_REQUEST", sessionId, name, args);
 });
 
 myEmitter.on(
   "TOOL_REQUEST",
-  async (
-    sessionId: string,
-    messages: Message[],
-    name: string,
-    args: Record<string, any>
-  ) => {
+  async (sessionId: string, name: string, args: Record<string, any>) => {
     console.log(
       `TOOL_REQUEST is triggered these are args ${sessionId}, ${name} , ${JSON.stringify(
         args
@@ -66,26 +73,30 @@ myEmitter.on(
     switch (name) {
       // get the location of user
       case "get_location_of_user_using_latitude_longitude":
-        output = getLocationOfUser({
-          latitude: args.latitude,
-          longitude: args.longitude,
-        });
+        output = getLocationOfUser(args.latitude, args.longitude);
         break;
       // get the weather using city name
       case "get_weather":
-        output = getWeather({ city: args.city });
+        output = await getWeather(args.city);
         break;
       // get co-ordinates of user
       case "get_latitude_longitude_of_user":
         output = getLatitudeLongitudeOfUser();
         break;
+      case "set_light_values":
+        output = setLightValues(args.brightness, args.color_temp);
+        break;
       default:
         output = "No tool is supported";
     }
 
+    // get the messages
+    const sessionMessages = await getSessionMessages(sessionId);
+    if (!sessionMessages)
+      throw new Error("No messsages present for this sessionId");
     // store the tool response in messages
-    messages.push({
-      role: Role.MODEL,
+    sessionMessages.push({
+      role: Role.USER,
       parts: [
         {
           functionResponse: {
@@ -98,9 +109,11 @@ myEmitter.on(
       ],
     });
 
+    await setSessionMessages(sessionId, sessionMessages);
+
     console.log(`Tool response :: ${JSON.stringify(output)}`);
 
     // send the response back to llm by calling the event of it
-    myEmitter.emit("LLM_REQUEST", sessionId, messages);
+    myEmitter.emit("LLM_REQUEST", sessionId);
   }
 );
